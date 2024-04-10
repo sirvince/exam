@@ -3,9 +3,11 @@ package com.example.myapplication.view;
 import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -31,6 +33,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
@@ -53,10 +56,11 @@ public class PersonalRegistrationActivity extends AppCompatActivity {
     private TextInputLayout tilGender;
     private AutoCompleteTextView actvGender;
 
-
+    private LinearLayout llPersonalInfoLayout;
     private Button btnSubmit;
-    private boolean hasError = false;
-    String myFormat = "dd/MM/yyyy";
+    private ArrayList<Boolean> checkValidationList;
+
+    private String myFormat = "dd/MM/yyyy";
     private PersonRegistrationViewModel personRegistrationViewModel;
 
     @Override
@@ -74,7 +78,7 @@ public class PersonalRegistrationActivity extends AppCompatActivity {
 
 
     private void  init(){
-
+        llPersonalInfoLayout = findViewById(R.id.llPersonalInfoLayout);
         tilFullName = findViewById(R.id.tilFullName);
         tilEmailAddress = findViewById(R.id.tilEmailAddress);
         tilMobileNumber = findViewById(R.id.tilMobileNumber);
@@ -98,31 +102,33 @@ public class PersonalRegistrationActivity extends AppCompatActivity {
         etDateOfBirth.setOnClickListener(v -> showDatePickerDialog());
         btnSubmit.setOnClickListener(v->validateInfo());
     }
-
-
     private void validateInfo() {
-        hasError = false;
-        hasError = ValidationHelper.isFieldEmpty(tilDateOfBirth);
-        hasError = ValidationHelper.isFieldEmpty(tilAge);
-        hasError = ValidationHelper.isFieldEmpty(tilGender);
-        hasError = ValidationHelper.isFieldValidate(tilFullName,RegexHelper.REGEX_NAME,"Invalid name: Text only and characters like comma and period");
-        hasError = ValidationHelper.isFieldValidate(tilEmailAddress,RegexHelper.REGEX_EMAIL_ADDRESS,"Invalid email address: Must be validated in right format");
-        hasError = ValidationHelper.isFieldValidate(tilMobileNumber,RegexHelper.REGEX_MOBILE_NUMBER,"Invalid mobile number: Must be validated in the right format for PH mobile number eg. 09171234567");
+        checkValidationList = new ArrayList<>();
+        checkValidationList.add(ValidationHelper.isFieldEmpty(tilDateOfBirth));
+        checkValidationList.add(ValidationHelper.isFieldEmpty(tilAge));
+        checkValidationList.add(ValidationHelper.isFieldEmpty(tilGender));
+        checkValidationList.add(ValidationHelper.isFieldValidate(tilFullName,RegexHelper.REGEX_NAME,"Invalid name: Text only and characters like comma and period"));
+        checkValidationList.add( ValidationHelper.isFieldValidate(tilEmailAddress,RegexHelper.REGEX_EMAIL_ADDRESS,"Invalid email address: Must be validated in right format"));
+        checkValidationList.add(ValidationHelper.isFieldValidate(tilMobileNumber,RegexHelper.REGEX_MOBILE_NUMBER,"Invalid mobile number: Must be validated in the right format for PH mobile number eg. 09171234567"));
 
-        if(!hasError){
-
-            Person person = new Person(
-                    tilFullName.getEditText().getText().toString().trim(),
-                    tilEmailAddress.getEditText().getText().toString().trim(),
-                    tilMobileNumber.getEditText().getText().toString().trim(),
-                    tilDateOfBirth.getEditText().getText().toString().trim(),
-                    Integer.parseInt(tilAge.getEditText().getText().toString().trim()),
-                    tilGender.getEditText().getText().toString().trim()
-            );
-
-            Log.v(PersonalRegistrationActivity.class.getSimpleName(),new Gson().toJson(person));
-            personRegistrationViewModel.registerDetails(person);
+        for(boolean isError : checkValidationList){
+            if(isError){
+                return;
+            }
         }
+
+        Person person = new Person(
+                tilFullName.getEditText().getText().toString().trim(),
+                tilEmailAddress.getEditText().getText().toString().trim(),
+                tilMobileNumber.getEditText().getText().toString().trim(),
+                tilDateOfBirth.getEditText().getText().toString().trim(),
+                Integer.parseInt(tilAge.getEditText().getText().toString().trim()),
+                tilGender.getEditText().getText().toString().trim()
+        );
+
+        Log.v(PersonalRegistrationActivity.class.getSimpleName(),new Gson().toJson(person));
+        personRegistrationViewModel.registerDetails(person);
+
     }
 
     private void initGenderOptions() {
@@ -151,7 +157,6 @@ public class PersonalRegistrationActivity extends AppCompatActivity {
     }
 
     private void updateDateOfBirth() {
-        String myFormat = "dd/MM/yyyy";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
         etDateOfBirth.setText(sdf.format(calendar.getTime()));
         computeAge(sdf.format(calendar.getTime()));
